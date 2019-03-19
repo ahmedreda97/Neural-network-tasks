@@ -74,6 +74,11 @@ class iris:
         testingSet.extend(virginica[40:])
         testingLabels.extend(labelVirginica[40:])
 
+        combined = list(zip(trainingSet, trainingLabels))
+        random.shuffle(combined)
+        trainingSet[:], trainingLabels[:] = zip(*combined)
+
+
         #print(labels)
         # trainingSet = inputData[:120]
         # testingSet = inputData[120:]
@@ -105,18 +110,10 @@ class iris:
         self.grads = {}
 
     def sigmoid(self, W):
-        ReturnList = []
-        for i in W:
-            tempValue = 1 / (1 + math.exp(-i))
-            ReturnList.append(tempValue)
-
-        return np.array(ReturnList)
+        return 1/(1+np.exp(-W))
 
     def tanh(self, W):
-        ReturnList = []
-        for i in W:
-            ReturnList.append(np.tanh(i))
-        return np.array(ReturnList)
+        return np.tanh(W)
 
     def sigmoid_backward(self, z):
         return z * (1 - z)
@@ -125,9 +122,7 @@ class iris:
         return 1 - np.power(np.tanh(z), 2)
 
     def getLoss(self, output, expected):
-        newList = []
-        newList = expected - output
-        return np.array(newList)
+        return expected-output
 
     def activation_function_backward(self, z):
         if self.activationFunction == 0:
@@ -150,11 +145,12 @@ class iris:
             self.grads[i - 1] = outputLayerGradient
 
     def update_params(self,input):
-
         for i in range(len(self.layerToMatrix)):
             gradsShape=self.grads[i].shape[0]
             inputShape=input[i].shape[0]
-            self.layerToMatrix[i]=self.layerToMatrix[i]+(self.rate*np.dot(self.grads[i].reshape((gradsShape,1)),input[i].reshape((1,inputShape)))).T
+            self.layerToMatrix[i]=self.layerToMatrix[i]+(self.rate*np.dot(self.grads[i].reshape((gradsShape,1)),input[i].reshape((1,inputShape))).T)
+            if i==4:
+                print(self.layerToMatrix[i])
 
     def train(self):
         for i in range(int(self.epoch)):
@@ -173,10 +169,11 @@ class iris:
 
                     cache[k + 1] = output
                     input = output  # add the output of the current layer as input of the next layer
-            currentInputLoss = self.getLoss(input, label)
+                #print(input, label, j)
+                currentInputLoss = self.getLoss(input, label)
 
-            self.backward(currentInputLoss, cache, self.layerToMatrix)
-            self.update_params(cache)
+                self.backward(currentInputLoss, cache, self.layerToMatrix)
+                self.update_params(cache)
 
     def getFinalRes(self, output):
         maxNum = max(output)
@@ -244,7 +241,7 @@ class iris:
 
 
 # # train a model: param (rate, hasBias, epocs, numLayers, numNodesInLayers, activationFunction)
-T1 = iris(0.25, True, 5, 3, [6, 7, 2], 0)
+T1 = iris(0.25, True, 50, 4, [2,3,4,8], 0)
 T1.train()
 T1.test()
 # T1.plotting()
