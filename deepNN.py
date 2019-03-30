@@ -1,7 +1,5 @@
 import random
-import matplotlib.pyplot as plt
 import numpy as np
-import math
 
 
 class iris:
@@ -10,14 +8,12 @@ class iris:
         # read dataset from file and divide it into 3 classes in divide each class into training and testing sets
         text_file = open("irisData.txt", "r")
         lines = text_file.read().split('\n')
-        setosa=[]
-        versicolor=[]
-        virginica=[]
+        setosa = []
+        versicolor = []
+        virginica = []
         labelSetosa = []
         labelVersicolor = []
         labelVirginica = []
-        inputData = []  # a list of list that holds the features of ALL classes
-        labels = []  # a list of list that holds the label of the corresponding sample in 'inputData' ([1,0,0] -> Setosa , [0,1,0] -> VersiColor , [0,0,1] -> Virginica )
 
         for i in range(len(lines)):
             if i != 0:  # skip first row that contains column's name
@@ -25,40 +21,34 @@ class iris:
                 if "setosa" in data[4]:
                     del data[4]
                     data = list(map(float, data))  # convert type from string to float
-                    if hasBias == True:
-                        data = [1] + data
                     setosa.append(data)
                     labelSetosa.append([1, 0, 0])
                 elif "versicolor" in data[4]:
                     del data[4]
                     data = list(map(float, data))  # convert type from string to float
-                    if hasBias == True:
-                        data = [1] + data
                     versicolor.append(data)
                     labelVersicolor.append([0, 1, 0])
                 elif "virginica" in data[4]:
                     del data[4]
                     data = list(map(float, data))  # convert type from string to float
-                    if hasBias == True:
-                        data = [1] + data
                     virginica.append(data)
                     labelVirginica.append([0, 0, 1])
         trainingSet = []
         testingSet = []
-        trainingLabels =[]
+        trainingLabels = []
         testingLabels = []
 
-        #randomize each class individually
+        # randomize each class individually
 
-        combined=list(zip(setosa,labelSetosa))
+        combined = list(zip(setosa, labelSetosa))
         random.shuffle(combined)
-        setosa[:],labelSetosa[:]=zip(*combined)
+        setosa[:], labelSetosa[:] = zip(*combined)
         trainingSet.extend(setosa[:40])
         trainingLabels.extend(labelSetosa[:40])
         testingSet.extend(setosa[40:])
         testingLabels.extend(labelSetosa[40:])
 
-        combined = list(zip(versicolor,labelVersicolor))
+        combined = list(zip(versicolor, labelVersicolor))
         random.shuffle(combined)
         versicolor[:], labelVersicolor[:] = zip(*combined)
         trainingSet.extend(versicolor[:40])
@@ -78,24 +68,19 @@ class iris:
         random.shuffle(combined)
         trainingSet[:], trainingLabels[:] = zip(*combined)
 
-
-        #print(labels)
-        # trainingSet = inputData[:120]
-        # testingSet = inputData[120:]
-        # trainingLabels = labels[:120]
-        # testingLabels = labels[120:]
-
-        # build a dictionary key: # layer , value : matrix of random weights
+        # A dictionary key: # layer , value : matrix of random weights
         layerToMatrix = {}
-        numOfInput = 4
-        if hasBias == True:
-            numOfInput = 5
-        numNodesInLayers = [numOfInput] + numNodesInLayers + [
+        # A dictionary key: # layer , value : bias vector
+        layerToBias = {}
+
+        numNodesInLayers = [4] + numNodesInLayers + [
             3]  # add at the begining the number of input nodes and append at the end the number of outputs
 
         for i in range(len(numNodesInLayers) - 1):
             nodesInLayer = np.random.rand(numNodesInLayers[i], numNodesInLayers[i + 1])
             layerToMatrix[i] = nodesInLayer
+            biasOfLayer = np.random.rand(numNodesInLayers[i + 1], 1)
+            layerToBias[i] = biasOfLayer
 
         # assign values to attributes
         self.trainingSet = trainingSet
@@ -106,11 +91,13 @@ class iris:
         self.hasBias = hasBias
         self.epoch = epoch
         self.layerToMatrix = layerToMatrix
+        self.layerToBias = layerToBias
         self.activationFunction = activationFunction
         self.grads = {}
+        self.gradsBias={}
 
     def sigmoid(self, W):
-        return 1/(1+np.exp(-W))
+        return 1 / (1 + np.exp(-W))
 
     def tanh(self, W):
         return np.tanh(W)
@@ -122,7 +109,8 @@ class iris:
         return 1 - np.power(np.tanh(z), 2)
 
     def getLoss(self, output, expected):
-        return expected-output
+        print(expected,output)
+        return expected - output
 
     def activation_function_backward(self, z):
         if self.activationFunction == 0:
@@ -131,7 +119,6 @@ class iris:
             return self.tanh_backward(z)
 
     def backward(self, loss, outputCache, weights):
-
         noLayers = len(weights)
         # currentLayerWeights = weights[noLayers]
         currentLayerOutputs = outputCache[noLayers]
@@ -144,13 +131,15 @@ class iris:
                                                                                                   self.grads[i])
             self.grads[i - 1] = outputLayerGradient
 
-    def update_params(self,input):
+    def update_params(self, input):
         for i in range(len(self.layerToMatrix)):
-            gradsShape=self.grads[i].shape[0]
-            inputShape=input[i].shape[0]
-            self.layerToMatrix[i]=self.layerToMatrix[i]+(self.rate*np.dot(self.grads[i].reshape((gradsShape,1)),input[i].reshape((1,inputShape))).T)
-            if i==4:
-                print(self.layerToMatrix[i])
+            gradsShape = self.grads[i].shape[0]
+            inputShape = input[i].shape[0]
+            self.layerToMatrix[i] = self.layerToMatrix[i] + (1/90*(
+                        self.rate * np.dot(self.grads[i].reshape((gradsShape, 1)), input[i].reshape((1, inputShape))).T))
+            self.layerToBias[i]=self.layerToBias[i]+(1/90*(self.rate*np.sum(self.grads[i],axis=0,keepdims=True)))
+            # if i==4:
+            # print(self.layerToMatrix[i])
 
     def train(self):
         for i in range(int(self.epoch)):
@@ -167,13 +156,14 @@ class iris:
                     if self.activationFunction == 0:  # sigmoid function
                         output = np.array(self.sigmoid(tempOutput))  # activation function using 'sigmoid'
 
+                    output += self.layerToBias[k].reshape(output.shape)
                     cache[k + 1] = output
                     input = output  # add the output of the current layer as input of the next layer
-                #print(input, label, j)
+                # print(input, label, j)
                 currentInputLoss = self.getLoss(input, label)
-
-                self.backward(currentInputLoss, cache, self.layerToMatrix)
-                self.update_params(cache)
+                #print(currentInputLoss)
+                #self.backward(currentInputLoss, cache, self.layerToMatrix)
+                #self.update_params(cache)
 
     def getFinalRes(self, output):
         maxNum = max(output)
@@ -206,10 +196,11 @@ class iris:
                 if self.activationFunction == 0:  # sigmoid function
                     output = np.array(self.sigmoid(tempOutput))  # activation function using 'sigmoid'
 
+                output += self.layerToBias[k].reshape(output.shape)
                 input = output  # add the output of the current layer as input of the next layer
 
             result = self.getFinalRes(input)  # give the function the final output as parameter
-
+            print(label,result)
             if np.array_equal(label, result) == True:
                 if result[0] == 1:  # C1
                     truePositivesC1 += 1
@@ -232,7 +223,7 @@ class iris:
                     falseNegativeC3LabeledC2 += 1
         accuracy = (truePositivesC1 + truePositivesC2 + truePositivesC3) / (
                 (truePositivesC1 + truePositivesC2 + truePositivesC3) + (
-                    falseNegativeC1LabeledC2 + falseNegativeC1LabeledC3 + falseNegativeC2LabeledC1 + falseNegativeC2LabeledC3 + falseNegativeC3LabeledC1 + falseNegativeC3LabeledC2))
+                falseNegativeC1LabeledC2 + falseNegativeC1LabeledC3 + falseNegativeC2LabeledC1 + falseNegativeC2LabeledC3 + falseNegativeC3LabeledC1 + falseNegativeC3LabeledC2))
         matrix = [[truePositivesC1, falseNegativeC2LabeledC1, falseNegativeC3LabeledC1],
                   [falseNegativeC1LabeledC2, truePositivesC2, falseNegativeC3LabeledC2],
                   [falseNegativeC1LabeledC3, falseNegativeC2LabeledC3, truePositivesC3]]
@@ -240,10 +231,9 @@ class iris:
         self.matrix = matrix
 
 
-# # train a model: param (rate, hasBias, epocs, numLayers, numNodesInLayers, activationFunction)
-T1 = iris(0.25, True, 50, 4, [2,3,4,8], 0)
+#  train a model: param (rate, hasBias, epoch, numLayers, numNodesInLayers, activationFunction)
+T1 = iris(0.00001, True, 5, 4, [2, 3, 4, 8], 0)
 T1.train()
 T1.test()
-# T1.plotting()
 print(T1.accuracy)
 print(T1.matrix)
