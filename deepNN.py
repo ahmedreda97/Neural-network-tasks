@@ -4,7 +4,11 @@ import numpy as np
 
 class iris:
     def __init__(self, rate, hasBias, epoch, numLayers, numNodesInLayers, activationFunction):
-
+        arrNum = numNodesInLayers.split(',')
+        numNodesInLayers = []
+        for i in range(int(numLayers)):
+            numNodesInLayers.append(int(arrNum[i]))
+        print(numNodesInLayers)
         # read dataset from file and divide it into 3 classes in divide each class into training and testing sets
         text_file = open("irisData.txt", "r")
         lines = text_file.read().split('\n')
@@ -232,8 +236,8 @@ class iris:
 
 
 #  train a model: param (rate, hasBias, epoch, numLayers, numNodesInLayers, activationFunction)
-T1 = iris(0.00001, True, 5, 4, [2, 3, 4, 8], 0)
-T1.train()
-T1.test()
-print(T1.accuracy)
-print(T1.matrix)
+# T1 = iris(0.00001, True, 5, 4, [2, 3, 4, 8], 0)
+# T1.train()
+# T1.test()
+# print(T1.accuracy)
+# print(T1.matrix)
